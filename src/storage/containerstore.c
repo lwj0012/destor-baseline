@@ -95,7 +95,8 @@ static void init_container_meta(struct containerMeta *meta) {
  */
 struct container* create_container() {
 	struct container *c = (struct container*) malloc(sizeof(struct container));
-	if (destor.simulation_level < SIMULATION_APPEND)
+	//if (destor.simulation_level < SIMULATION_APPEND)
+	if (1)
 		c->data = calloc(1, CONTAINER_SIZE);
 	else
 		c->data = 0;
@@ -143,7 +144,8 @@ void write_container(struct container* c) {
 	VERBOSE("Append phase: Writing container %lld of %d chunks", c->meta.id,
 			c->meta.chunk_num);
 
-	if (destor.simulation_level < SIMULATION_APPEND) {
+	//if (destor.simulation_level < SIMULATION_APPEND) {
+	if (1) {
 
 		unsigned char * cur = &c->data[CONTAINER_SIZE - CONTAINER_META_SIZE];
 		ser_declare;
@@ -220,12 +222,14 @@ struct container* retrieve_container_by_id(containerid id) {
 	init_container_meta(&c->meta);
 
 	unsigned char *cur = 0;
-	if (destor.simulation_level >= SIMULATION_RESTORE) {
+	//if (destor.simulation_level >= SIMULATION_RESTORE) {
+	if (0) {
 		c->data = malloc(CONTAINER_META_SIZE);
 
 		pthread_mutex_lock(&mutex);
 
-		if (destor.simulation_level >= SIMULATION_APPEND)
+		//if (destor.simulation_level >= SIMULATION_APPEND)
+		if (0)
 			fseek(fp, id * CONTAINER_META_SIZE + 8, SEEK_SET);
 		else
 			fseek(fp, (id + 1) * CONTAINER_SIZE - CONTAINER_META_SIZE + 8,
@@ -273,7 +277,8 @@ struct container* retrieve_container_by_id(containerid id) {
 
 	unser_end(cur, CONTAINER_META_SIZE);
 
-	if (destor.simulation_level >= SIMULATION_RESTORE) {
+	//if (destor.simulation_level >= SIMULATION_RESTORE) {
+	if (0) {
 		free(c->data);
 		c->data = 0;
 	}
@@ -320,7 +325,8 @@ struct containerMeta* retrieve_container_meta_by_id(containerid id) {
 
 	pthread_mutex_lock(&mutex);
 
-	if (destor.simulation_level >= SIMULATION_APPEND)
+	//if (destor.simulation_level >= SIMULATION_APPEND)
+	if (0)
 		fseek(fp, id * CONTAINER_META_SIZE + 8, SEEK_SET);
 	else
 		fseek(fp, (id + 1) * CONTAINER_SIZE - CONTAINER_META_SIZE + 8,
@@ -367,7 +373,8 @@ struct chunk* get_chunk_in_container(struct container* c, fingerprint *fp) {
 
 	struct chunk* ck = new_chunk(me->len);
 
-	if (destor.simulation_level < SIMULATION_RESTORE)
+	//if (destor.simulation_level < SIMULATION_RESTORE)
+	if (1)
 		memcpy(ck->data, c->data + me->off, me->len);
 
 	ck->size = me->len;
@@ -409,6 +416,7 @@ int add_chunk_to_container(struct container* c, struct chunk* ck) {
 	g_hash_table_insert(c->meta.map, &me->fp, me);
 	c->meta.chunk_num++;
 
+	//if (1)
 	if (destor.simulation_level < SIMULATION_APPEND)
 		memcpy(c->data + c->meta.data_size, ck->data, ck->size);
 

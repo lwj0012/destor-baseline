@@ -17,6 +17,13 @@ struct{
 	GSequence *chunks;
 } storage_buffer;
 
+struct rewrite_chk {
+    int32_t cnt;
+    int size;
+};
+
+GHashTable *rewrite_info;
+
 extern struct {
 	/* g_mutex_init() is unnecessary if in static storage. */
 	GMutex mutex;
@@ -166,6 +173,17 @@ static void* filter_thread(void *arg) {
                     	VERBOSE("Filter phase: %dth chunk is recently unique, size %d", chunk_num,
                     			g_hash_table_size(recently_unique_chunks));
                 	} else {
+                        fingerprint *fp = malloc(sizeof(fingerprint));
+                        memcpy(fp, &c->fp, sizeof(fingerprint));
+                        if (g_hash_table_contains(rewrite_info, fp)) {
+                            struct rewrite_chk *rchk = g_hash_table_lookup(rewrite_info, fp);
+                            rchk->cnt += 1;
+                        } else {
+                            struct rewrite_chk *rchk = malloc(sizeof(struct rewrite_chk));
+                            rchk->cnt = 1;
+                            rchk->size = c->size;
+                            g_hash_table_insert(rewrite_info, fp, rchk);
+                        }
                 		jcr.rewritten_chunk_num++;
                 		jcr.rewritten_chunk_size += c->size;
                 		g_hash_table_insert(recently_rewritten_chunks, &wc->fp, wc);
@@ -327,6 +345,23 @@ static void* filter_thread(void *arg) {
 
 void start_filter_phase() {
 
+    rewrite_info = g_hash_table_new_full(g_int64_hash, g_fingerprint_equal, NULL, free);
+    //load the rewrite_info
+    sds ri = sdsdup(destor.working_directory);
+    ri = sdscat(ri, "/rewrite_info");
+    FILE *tmpfp;
+    if (tmpfp = fopen(ri, "r+")) {
+        fingerprint *fp = malloc(sizeof(fingerprint));
+        struct rewrite_chk *rchk = malloc(sizeof(struct rewrite_chk));
+        while (fread(fp, sizeof(fingerprint), 1, tmpfp) == 1
+                && fread(rchk, sizeof(struct rewrite_chk), 1, tmpfp) == 1) {
+            g_hash_table_insert(rewrite_info, fp, rchk);
+            fp = malloc(sizeof(fingerprint));
+            rchk = malloc(sizeof(struct rewrite_chk));
+        }
+        fclose(tmpfp);
+    }
+
 	storage_buffer.container_buffer = NULL;
 
     init_restore_aware();
@@ -338,5 +373,18 @@ void stop_filter_phase() {
     pthread_join(filter_t, NULL);
     close_har();
 	NOTICE("filter phase stops successfully!");
+
+    //save the rewrite_info
+    sds ri = sdsdup(destor.working_directory);
+    ri = sdscat(ri, "/rewrite_info");
+    FILE *tmpfp = fopen(ri, "w");
+    GHashTableIter iter;
+    gpointer key, value;
+    g_hash_table_iter_init (&iter, rewrite_info);
+    while (g_hash_table_iter_next (&iter, &key, &value)) {
+        fwrite(key, sizeof(fingerprint), 1, tmpfp);
+        fwrite(value, sizeof(struct rewrite_chk), 1, tmpfp);
+    }
+    fclose(tmpfp);
 
 }

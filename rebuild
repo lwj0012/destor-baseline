@@ -1,6 +1,6 @@
 #!/bin/sh
 
-DIR=/home/data/working/
+DIR=/Dedup-data/des/Macos2014-ori-working
 mkdir -p ${DIR}/recipes/
 mkdir -p ${DIR}/index/
 

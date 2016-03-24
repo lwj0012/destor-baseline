@@ -7,7 +7,8 @@
 
 static void* lru_restore_thread(void *arg) {
 	struct lruCache *cache;
-	if (destor.simulation_level >= SIMULATION_RESTORE)
+	// if (destor.simulation_level >= SIMULATION_RESTORE)
+	if (0)
 		cache = new_lru_cache(destor.restore_cache[1], free_container_meta,
 				lookup_fingerprint_in_container_meta);
 	else
@@ -25,7 +26,8 @@ static void* lru_restore_thread(void *arg) {
 		TIMER_DECLARE(1);
 		TIMER_BEGIN(1);
 
-		if (destor.simulation_level >= SIMULATION_RESTORE) {
+		// if (destor.simulation_level >= SIMULATION_RESTORE) {
+		if (0) {
 			struct containerMeta *cm = lru_cache_lookup(cache, &c->fp);
 			if (!cm) {
 				VERBOSE("Restore cache: container %lld is missed", c->id);
@@ -157,7 +159,8 @@ void* write_restore_data(void* arg) {
 				q = p + 1;
 			}
 
-			if (destor.simulation_level == SIMULATION_NO) {
+			//if (destor.simulation_level == SIMULATION_NO) {
+			if (1) {
 				assert(fp == NULL);
 				fp = fopen(filepath, "w");
 			}
@@ -171,7 +174,7 @@ void* write_restore_data(void* arg) {
 				fclose(fp);
 			fp = NULL;
 		} else {
-			assert(destor.simulation_level == SIMULATION_NO);
+			//assert(destor.simulation_level == SIMULATION_NO);
 			VERBOSE("Restoring %d bytes", c->size);
 			fwrite(c->data, c->size, 1, fp);
 		}
@@ -227,10 +230,10 @@ void do_restore(int revision, char *path) {
     do{
         sleep(5);
         /*time_t now = time(NULL);*/
-        fprintf(stderr, "%" PRId64 " bytes, %" PRId32 " chunks, %d files processed\r", 
+        fprintf(stderr, "%" PRId64 " bytes, %" PRId32 " chunks, %d files processed\r",
                 jcr.data_size, jcr.chunk_num, jcr.file_num);
     }while(jcr.status == JCR_STATUS_RUNNING || jcr.status != JCR_STATUS_DONE);
-    fprintf(stderr, "%" PRId64 " bytes, %" PRId32 " chunks, %d files processed\n", 
+    fprintf(stderr, "%" PRId64 " bytes, %" PRId32 " chunks, %d files processed\n",
         jcr.data_size, jcr.chunk_num, jcr.file_num);
 
 	assert(sync_queue_size(restore_chunk_queue) == 0);
