@@ -141,7 +141,9 @@ void* write_restore_data(void* arg) {
 			VERBOSE("Restoring: %s", c->data);
 
 			sds filepath = sdsdup(jcr.path);
-			filepath = sdscat(filepath, c->data);
+            sds tmpfile = sdsnew("restor_file");
+			//filepath = sdscat(filepath, c->data);
+			filepath = sdscat(filepath, tmpfile);
 
 			int len = sdslen(jcr.path);
 			char *q = filepath + len;
